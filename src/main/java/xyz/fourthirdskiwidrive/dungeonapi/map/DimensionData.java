@@ -5,8 +5,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
-import xyz.fourthirdskiwidrive.dungeonapi.ChunkSlice;
-import xyz.fourthirdskiwidrive.dungeonapi.ChunkSliceManager;
+import xyz.fourthirdskiwidrive.dungeonapi.util.ChunkSlice;
+import xyz.fourthirdskiwidrive.dungeonapi.util.ChunkSliceManager;
 
 public class DimensionData {
     private static DimensionData instance;

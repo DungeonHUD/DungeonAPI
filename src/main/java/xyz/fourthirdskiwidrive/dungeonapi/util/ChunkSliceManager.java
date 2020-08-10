@@ -1,4 +1,4 @@
-package xyz.fourthirdskiwidrive.dungeonapi;
+package xyz.fourthirdskiwidrive.dungeonapi.util;
 
 
 import net.minecraft.block.Block;
@@ -64,5 +64,18 @@ public class ChunkSliceManager {
 
 
         return ret;
+    }
+
+    public void printAllData() {
+        if(Minecraft.getMinecraft().theWorld == null) return;
+        for (int i = 0; i < 256; i++) {
+            for (int j = 0; j < 256; j++) {
+                if(getIndividualBlock(i,j) == Blocks.air)
+                    System.out.print(" ");
+                else
+                    System.out.print("#");
+            }
+            System.out.print("\n");
+        }
     }
 }

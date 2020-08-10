@@ -2,7 +2,7 @@ package xyz.fourthirdskiwidrive.dungeonapi.rooms;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
-import xyz.fourthirdskiwidrive.dungeonapi.ChunkSliceManager;
+import xyz.fourthirdskiwidrive.dungeonapi.util.ChunkSliceManager;
 
 import java.util.ArrayList;
 

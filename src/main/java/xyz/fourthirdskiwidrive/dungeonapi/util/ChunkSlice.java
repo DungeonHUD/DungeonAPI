@@ -1,4 +1,4 @@
-package xyz.fourthirdskiwidrive.dungeonapi;
+package xyz.fourthirdskiwidrive.dungeonapi.util;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;

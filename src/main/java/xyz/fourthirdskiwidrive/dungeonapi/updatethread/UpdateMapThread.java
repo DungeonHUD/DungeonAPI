@@ -1,7 +1,7 @@
 package xyz.fourthirdskiwidrive.dungeonapi.updatethread;
 
 import net.minecraft.client.Minecraft;
-import xyz.fourthirdskiwidrive.dungeonapi.ChunkSliceManager;
+import xyz.fourthirdskiwidrive.dungeonapi.util.ChunkSliceManager;
 
 
 public class UpdateMapThread {
@@ -16,6 +16,7 @@ public class UpdateMapThread {
         if(Minecraft.getMinecraft().theWorld != null) {
             csm.update();
             csm.updateSizes();
+            //csm.printAllData();
         }
     }
 
