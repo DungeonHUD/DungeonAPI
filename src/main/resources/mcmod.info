@@ -1,0 +1,16 @@
+[
+{
+  "modid": "dungeonapi",
+  "name": "Dungeon API",
+  "description": "API for dealing with Hypixel Skyblock Dungeons",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Drew"],
+  "credits": "Antonio32A, for encouraging me to switch to 1.8.9 and make it an API",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
