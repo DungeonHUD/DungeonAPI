@@ -1,11 +1,9 @@
-package xyz.fourthirdskiwidrive.dungeonapi.rooms;
+package xyz.fourthirdskiwidrive.dungeonapi.room;
 
 import java.util.ArrayList;
 
 public class Miniboss extends Room {
-    public Miniboss (int x, int z, int r) {
-        super(x,z,r);
-
+    public Miniboss () {
         Secrets = new ArrayList<>(
         );
     }

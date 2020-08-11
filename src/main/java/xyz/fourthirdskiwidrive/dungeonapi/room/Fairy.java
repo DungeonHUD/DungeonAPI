@@ -1,10 +1,9 @@
-package xyz.fourthirdskiwidrive.dungeonapi.rooms;
+package xyz.fourthirdskiwidrive.dungeonapi.room;
 
 import java.util.ArrayList;
 
 public class Fairy extends Room {
-    public Fairy (int x, int z, int r) {
-        super(x, z, r);
+    public Fairy () {
 
         Secrets = new ArrayList<> (
         );

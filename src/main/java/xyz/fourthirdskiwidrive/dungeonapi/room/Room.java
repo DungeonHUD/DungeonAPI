@@ -1,4 +1,4 @@
-package xyz.fourthirdskiwidrive.dungeonapi.rooms;
+package xyz.fourthirdskiwidrive.dungeonapi.room;
 
 
 import java.security.InvalidParameterException;
@@ -7,9 +7,6 @@ import java.util.ArrayList;
 public abstract class Room {
 
     public ArrayList<SecretSubPosition> Secrets;
-    protected final int xstart;
-    protected final int zstart;
-    protected final int rotation;
 
     public class SecretSubPosition {
         public int x;
@@ -22,13 +19,11 @@ public abstract class Room {
         public int z;
     }
 
-    public Room (int x, int z, int r) {
-        xstart = x;
-        zstart = z;
-        rotation = r;
+    public Room () {
+
     }
 
-    public ArrayList<SecretPosition> getSecretPositions() throws InvalidParameterException {
+    public ArrayList<SecretPosition> getSecretPositions(int rotation, int xstart, int zstart) throws InvalidParameterException {
         ArrayList<SecretPosition> ret = new ArrayList<>();
 
         for(SecretSubPosition secret : Secrets) {

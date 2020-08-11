@@ -1,4 +1,4 @@
-package xyz.fourthirdskiwidrive.dungeonapi.rooms;
+package xyz.fourthirdskiwidrive.dungeonapi.room;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
@@ -116,32 +116,29 @@ public class DungeonLayoutIdentifier {
         }
 
         if(bloodDoorPresent && connectCount == 0 && doorCount == 1)
-            return new Watcher(sectionx, sectionz, 0);
+            return new BloodRoom();
         else if(!bloodDoorPresent && connectCount == 0 && doorCount == 2)
-            return new Fairy(sectionx, sectionz, 0);
+            return new Fairy();
         //If doorCount is 1 and connectCount is 0, its gotta be a puzzle or the start. For now, its all tic tac toe puzzle, because I
         //want to start writing the code for larger corridor rooms
         //TODO: Make this identify puzzle and start rooms. Maybe also miniboss rooms if those exist?
         else if(doorCount == 1 && connectCount == 0) {
-            return new Puzzle(sectionx, sectionz, 0, Puzzle.PuzzleType.TICTACTOE) {
+            return new Puzzle() {
 
-                @Override
-                public PuzzleType getPuzzleType() {
-                    return PuzzleType.TICTACTOE;
-                }
             };
         }
         else if(connectCount != 0) {
             //TODO: Make it identify different corridor types and stuff
-            return new Corridor(0, 0, 0, Corridor.RoomShape.LS_2_2) {
-                @Override
-                public RoomType getRoomType() {
-                    return super.getRoomType();
-                }
-            };
+
         }
 
-        return new GenericRoom(sectionx, sectionz, 0);
+        return new Room() {
+
+            @Override
+            public RoomType getRoomType() {
+                return null;
+            }
+        };
     }
 
     private static RoomWallType getWallType(Block[] wall) {

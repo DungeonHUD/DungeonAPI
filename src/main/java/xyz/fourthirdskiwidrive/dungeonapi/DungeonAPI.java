@@ -4,6 +4,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import xyz.fourthirdskiwidrive.dungeonapi.updatethread.UpdateMapThread;
+import xyz.fourthirdskiwidrive.dungeonapi.util.ResourceID;
+import xyz.fourthirdskiwidrive.dungeonapi.util.RoomParser;
 
 import javax.swing.*;
 import java.awt.event.ActionListener;
@@ -23,5 +25,6 @@ public class DungeonAPI
         Timer timer = new Timer(500, mapThreadUpdateTrigger);
         timer.setRepeats(true);
         timer.start();
+        //System.out.printf("%s", RoomParser.ParseRoom(new ResourceID("/layouts/ExampleRoom.json")).getType());
     }
 }

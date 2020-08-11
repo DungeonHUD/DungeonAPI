@@ -1,7 +1,11 @@
-package xyz.fourthirdskiwidrive.dungeonapi.rooms;
+package xyz.fourthirdskiwidrive.dungeonapi.room;
 
 
-public abstract class Corridor extends Room {
+import xyz.fourthirdskiwidrive.dungeonapi.util.ResourceID;
+
+import java.io.InputStream;
+
+public class Corridor extends Room {
     public enum RoomShape {
         SQ_1_1,     // Square, 1x1
         RC_1_2,     // Rectangular, 1x2
@@ -11,11 +15,8 @@ public abstract class Corridor extends Room {
         LS_2_2      // L-Shaped, 2x2
     }
     protected RoomShape roomShape;
-    public Corridor (int x, int z, int r, RoomShape roomShape) {
-        super(x, z, r);
+    public Corridor (RoomShape roomShape, ResourceID Layout) {
         this.roomShape = roomShape;
-
-
     }
 
     @Override
@@ -24,7 +25,7 @@ public abstract class Corridor extends Room {
     }
 
     public static Corridor inferCorridorType(DungeonLayoutIdentifier.RoomSection[][] section) {
-        return new Corridor(420, 69, 2, RoomShape.SQ_1_1) {
+        return new Corridor(RoomShape.SQ_1_1, new ResourceID("no.csv")) {
 
         };
     }
