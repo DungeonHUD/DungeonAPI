@@ -1,56 +1,51 @@
 package xyz.fourthirdskiwidrive.dungeonapi.room;
 
 
+import net.minecraft.util.BlockPos;
+import xyz.fourthirdskiwidrive.dungeonapi.util.Secret;
+
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Room {
 
-    public ArrayList<SecretSubPosition> Secrets;
-
-    public class SecretSubPosition {
-        public int x;
-        public int y;
-        public int z;
-    }
-    public class SecretPosition {
-        public int x;
-        public int y;
-        public int z;
-    }
+    public List<Secret> Secrets;
 
     public Room () {
-
+        //Secrets = roomData.getSecrets();
     }
 
-    public ArrayList<SecretPosition> getSecretPositions(int rotation, int xstart, int zstart) throws InvalidParameterException {
-        ArrayList<SecretPosition> ret = new ArrayList<>();
+    public List<BlockPos> getSecretPositions(int rotation, int xstart, int zstart) throws InvalidParameterException {
+        List<BlockPos> ret = new ArrayList<>();
 
-        for(SecretSubPosition secret : Secrets) {
-            SecretPosition temp = new SecretPosition();
-            temp.y = secret.y;
+        for(Secret secret : Secrets) {
+            int tempx;
+            int tempy;
+            int tempz = 0;
+            tempy = secret.getY();
             switch(rotation) {
                 case 0:
-                    temp.x = xstart + secret.x;
-                    temp.z = zstart + secret.z;
+                    tempx = xstart + secret.getX();
+                    tempz = zstart + secret.getZ();
                     break;
                 case 1:
-                    temp.x = xstart + (32 - secret.z);
-                    temp.y = zstart + secret.x;
+                    tempx = xstart + (32 - secret.getZ());
+                    tempy = zstart + secret.getX();
                     break;
                 case 2:
-                    temp.x = xstart + (32 - secret.x);
-                    temp.z = zstart + (32 - secret.z);
+                    tempx = xstart + (32 - secret.getX());
+                    tempz = zstart + (32 - secret.getZ());
                     break;
                 case 3:
-                    temp.x = xstart + secret.z;
-                    temp.z = xstart + (32 - secret.x);
+                    tempx = xstart + secret.getZ();
+                    tempz = xstart + (32 - secret.getX());
                     break;
                 default:
                     throw new InvalidParameterException("Room rotation must be between 0 and 3");
             }
 
-            ret.add(temp);
+            ret.add(new BlockPos(tempx, tempy, tempz));
         }
 
         return ret;

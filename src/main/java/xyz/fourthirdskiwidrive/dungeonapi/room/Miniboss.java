@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 public class Miniboss extends Room {
     public Miniboss () {
+        super();
         Secrets = new ArrayList<>(
         );
     }

@@ -1,12 +1,12 @@
 package xyz.fourthirdskiwidrive.dungeonapi.updatethread;
 
 import net.minecraft.client.Minecraft;
+import xyz.fourthirdskiwidrive.dungeonapi.room.DungeonLayoutIdentifier;
 import xyz.fourthirdskiwidrive.dungeonapi.util.ChunkSliceManager;
-import xyz.fourthirdskiwidrive.dungeonapi.util.ResourceID;
-import xyz.fourthirdskiwidrive.dungeonapi.util.RoomParser;
 
 
-public class UpdateMapThread {
+
+public class UpdateMapThread implements Runnable {
     private ChunkSliceManager csm;
     public static int UPDATE_TIME = 500;
 
@@ -14,12 +14,15 @@ public class UpdateMapThread {
         csm = ChunkSliceManager.getInstance();
     }
 
-    public void update() {
-        if(Minecraft.getMinecraft().theWorld != null) {
-            csm.update();
-            csm.updateSizes();
-            //csm.printAllData();
-
+    public void run() {
+        try {
+            if(Minecraft.getMinecraft().theWorld != null) {
+                csm.update();
+                csm.updateSizes();
+                DungeonLayoutIdentifier dli = new DungeonLayoutIdentifier(csm);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 

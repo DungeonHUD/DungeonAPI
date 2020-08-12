@@ -1,10 +1,14 @@
 package xyz.fourthirdskiwidrive.dungeonapi.room;
 
-import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
+import xyz.fourthirdskiwidrive.dungeonapi.util.ChatPrinter;
 import xyz.fourthirdskiwidrive.dungeonapi.util.ChunkSliceManager;
+import xyz.fourthirdskiwidrive.dungeonapi.util.CoordinatePair;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
 public class DungeonLayoutIdentifier {
     public enum RoomWallType {
@@ -14,153 +18,286 @@ public class DungeonLayoutIdentifier {
         ROOM_WALL_TYPE_BLOOD_DOOR,
     }
 
-    public static class DIRECTIONS {
+    public static class Direction {
         public static final int NORTH = 0;
         public static final int EAST  = 1;
         public static final int SOUTH = 2;
         public static final int WEST  = 3;
     }
 
+    static class Wall {
+        public int parentSectionX;
+        public int parentSectionZ;
+        public int direction;
 
-    public static class RoomSection {
-
-        public boolean IsPartOfARoomYet = false;
-        public boolean hasBloodDoor = false;
-
-        //Clockwise, negative z (North) first, then positive x, positive z, negative x
-        public RoomWallType[] walls = new RoomWallType[4];
+        public Wall(int x, int z, int dir) {
+            this.parentSectionX = x;
+            this.parentSectionZ = z;
+            this.direction = dir;
+        }
     }
 
-    public static ArrayList<Room> identifyAllRooms(int xSectionCount, int ySectionCount, ChunkSliceManager manager) {
-        ArrayList<Room> ret = new ArrayList<>();
+    private ChunkSliceManager csm;
+    private Queue<Wall> doorQueue = new LinkedList<>();
+    private Queue<Wall> connectionQueue = new LinkedList<>();
 
-        RoomSection[][] Sections = new RoomSection[xSectionCount][ySectionCount];
+    private List<RoomCandidate> rooms = new ArrayList<>();
+    private RoomCandidate currentRoomCandidate = new RoomCandidate();
 
-        Block[][] worldSlice = new Block[xSectionCount * 32 + 1][ySectionCount * 32 + 1];
+    private List<CoordinatePair> processedSections = new ArrayList<>();
 
-        //Initialize every block in the worldSlice with either air or what is there
-        for (int i = 0; i < worldSlice.length; ++i) {
-            for (int j = 0; j < worldSlice[i].length; ++j) {
-                //If the block is outside the scope, make it air
-                if(i < 1 || j < 1) {
-                    worldSlice[i][j] = Blocks.air;
-                }
-                //Otherwise, find the block and set it, using some bitwise operations to make it faster and cleaner
-                else {
-                    worldSlice[i][j] = manager.slices.get((i-1) >> 4).get((j-1) >> 4).blocks[(i-1) & 0b1111][(j-1) & 0b1111];
-                }
-            }
+    private int step = 0;
+
+    public DungeonLayoutIdentifier(ChunkSliceManager csm) {
+        this.csm = csm;
+        this.setStartingRoomSection(0, 0);
+        while(this.step()) {
+            assert true;
         }
-
-        //REMEMBER THAT THE WORLD SLICE HAS BLOCKS INDEXED AS 1 GREATER THAN THE ACTUAL COORDINATE IN EACH DIRECTION
-        final int XOFFSET_EAST  = 32;
-        final int ZOFFSET_SOUTH = 32;
-
-        for (int i = 0; i < xSectionCount; ++i) {
-            for (int j = 0; j < ySectionCount; ++j) {
-                final int XOFFSET = i * 32;
-                final int ZOFFSET = j * 32;
-
-                RoomSection currentRoomSection = new RoomSection();
-
-                currentRoomSection.walls[DIRECTIONS.NORTH] = getWallType(worldSlice[XOFFSET]);
-                currentRoomSection.walls[DIRECTIONS.SOUTH] = getWallType(worldSlice[XOFFSET + XOFFSET_EAST]);
-
-                Block[] wallWest = new Block[33];
-                for(int k = 0; k < 33; ++k) {
-                    wallWest[k] = worldSlice[XOFFSET + k][ZOFFSET];
-                }
-
-                currentRoomSection.walls[DIRECTIONS.WEST] = getWallType(wallWest);
-
-                Block[] wallEast = new Block[33];
-                for(int k = 0; k < 33; ++k) {
-                    wallEast[k] = worldSlice[XOFFSET + k][ZOFFSET + ZOFFSET_SOUTH];
-                }
-
-                currentRoomSection.walls[DIRECTIONS.EAST] = getWallType(wallEast);
-
-                Sections[i][j] = currentRoomSection;
-
-            }
-        }
-
-        //Ok so now i just have to identify rooms based off of the sections
-
-        //A few rules:
-        // 1. Fairy rooms always have 2 doors, 0 connections
-        // 2. If it has 1 door, 0 connections, it must be Start, Watcher, or Puzzle
-        // 3. If it has ANY connections, it is a corridor, and identification expansion must happen
-        // 4. If it has 1 door, 0 connections, and the door is a blood door, it is the watcher room. There is only 1 of these, so it only needs to be checked once
-
-        for(int i = 0; i < xSectionCount; ++i) {
-            for(int j = 0; j < ySectionCount; ++j) {
-                if(Sections[i][j].IsPartOfARoomYet) continue;
-                ret.add(identifyIndividualRoom(Sections, i, j));
-            }
-        }
-
-        return ret;
+        ChatPrinter.print("yeet");
+        this.print();
     }
 
-    private static Room identifyIndividualRoom(RoomSection[][] sections, int sectionx, int sectionz) {
-        int doorCount = 0;
-        int connectCount = 0;
-        boolean bloodDoorPresent = false;
-
-        for(RoomWallType wall : sections[sectionx][sectionz].walls) {
-            if (wall == RoomWallType.ROOM_WALL_TYPE_BLOOD_DOOR) bloodDoorPresent = true;
-            if (wall == RoomWallType.ROOM_WALL_TYPE_BLOOD_DOOR ||
-                wall == RoomWallType.ROOM_WALL_TYPE_DOOR)       doorCount++;
-            if (wall == RoomWallType.ROOM_WALL_TYPE_CONNECTED)  connectCount++;
+    public boolean step() {
+        step++;
+        if(step > 16) {
+            connectionQueue.poll();
+            return true;
         }
-
-        if(bloodDoorPresent && connectCount == 0 && doorCount == 1)
-            return new BloodRoom();
-        else if(!bloodDoorPresent && connectCount == 0 && doorCount == 2)
-            return new Fairy();
-        //If doorCount is 1 and connectCount is 0, its gotta be a puzzle or the start. For now, its all tic tac toe puzzle, because I
-        //want to start writing the code for larger corridor rooms
-        //TODO: Make this identify puzzle and start rooms. Maybe also miniboss rooms if those exist?
-        else if(doorCount == 1 && connectCount == 0) {
-            return new Puzzle() {
-
-            };
-        }
-        else if(connectCount != 0) {
-            //TODO: Make it identify different corridor types and stuff
-
-        }
-
-        return new Room() {
-
-            @Override
-            public RoomType getRoomType() {
-                return null;
+        if(connectionQueue.size() > 0) {
+            Wall pos = connectionQueue.poll();
+            int roomX = 0;
+            int roomZ = 0;
+            switch(pos.direction) {
+                case Direction.NORTH:
+                    roomX = pos.parentSectionX;
+                    roomZ = pos.parentSectionZ - 1;
+                    break;
+                case Direction.SOUTH:
+                    roomX = pos.parentSectionX;
+                    roomZ = pos.parentSectionZ + 1;
+                    break;
+                case Direction.WEST:
+                    roomX = pos.parentSectionX + 1;
+                    roomZ = pos.parentSectionZ;
+                    break;
+                case Direction.EAST:
+                    roomX = pos.parentSectionX - 1;
+                    roomZ = pos.parentSectionZ;
+                    break;
+                default:
+                    System.err.println("Invalid direction");
             }
-        };
+            processRoomSection(roomX, roomZ, pos.direction);
+            return true;
+        } else if (doorQueue.size() > 0) {
+            step = 0;
+            rooms.add(currentRoomCandidate);
+            currentRoomCandidate = new RoomCandidate();
+            Wall pos = doorQueue.poll();
+            int roomX = 0;
+            int roomZ = 0;
+            switch(pos.direction) {
+                case Direction.NORTH:
+                    roomX = pos.parentSectionX;
+                    roomZ = pos.parentSectionZ - 1;
+                    break;
+                case Direction.SOUTH:
+                    roomX = pos.parentSectionX;
+                    roomZ = pos.parentSectionZ + 1;
+                    break;
+                case Direction.WEST:
+                    roomX = pos.parentSectionX + 1;
+                    roomZ = pos.parentSectionZ;
+                    break;
+                case Direction.EAST:
+                    roomX = pos.parentSectionX - 1;
+                    roomZ = pos.parentSectionZ;
+                    break;
+                default:
+                    System.err.println("Invalid direction");
+            }
+            processRoomSection(roomX, roomZ, pos.direction);
+
+            return true;
+        }
+
+        rooms.add(currentRoomCandidate);
+        currentRoomCandidate = new RoomCandidate();
+        return false;
     }
 
-    private static RoomWallType getWallType(Block[] wall) {
-        assert wall.length == 33;
-        if(wall[16] == Blocks.coal_block ) {
-            return RoomWallType.ROOM_WALL_TYPE_DOOR;
-        }
+    public void setStartingRoomSection(int x, int z) {
+        rooms.clear();
+        currentRoomCandidate = new RoomCandidate();
+        currentRoomCandidate.isStartingRoom = true;
 
-        else if (wall[16] == Blocks.stained_hardened_clay) {
-            return RoomWallType.ROOM_WALL_TYPE_BLOOD_DOOR;
-        }
+        processRoomSection(x, z, -1);
+    }
 
-        //If the corner isn't air, that means its connected
-        else if(wall[0] != Blocks.air ||
-           wall[32] != Blocks.air) {
-            return RoomWallType.ROOM_WALL_TYPE_CONNECTED;
-        }
-        else {
-            for (Block b : wall) {
-                if(b != Blocks.air) return RoomWallType.ROOM_WALL_TYPE_DOOR;
+    /**
+     *
+     * @param x the x
+     * @param z the z
+     * @param oppositeExcludeDirection the direction opposite of where this will not process to avoid an infinite loop
+     */
+    public void processRoomSection(int x, int z, int oppositeExcludeDirection) {
+        currentRoomCandidate.sections.add(new CoordinatePair(x, z));
+        if(oppositeExcludeDirection != Direction.NORTH) {
+            //Do south
+
+            //Detect connected
+            if((csm.getIndividualBlock(x * 32     , z * 32 + 31) != Blocks.air
+            || csm.getIndividualBlock(x * 32 + 30, z * 32 + 31) != Blocks.air)
+            && !currentRoomContainsSection(x, z + 1)) {
+                connectionQueue.add(new Wall(x, z, Direction.SOUTH));
             }
-            return RoomWallType.ROOM_WALL_TYPE_SEALED;
+            //Detect door
+            else if(csm.getIndividualBlock(x * 32 + 13, z * 32 + 31) != Blocks.air
+                    && !currentRoomContainsSection(x, z + 1)) {
+                doorQueue.add(new Wall(x, z, Direction.SOUTH));
+            }
         }
+        if(oppositeExcludeDirection != Direction.SOUTH) {
+            //Do north
+
+            //Detect connected
+            if((csm.getIndividualBlock(x * 32     , z * 32 - 1) != Blocks.air
+            || csm.getIndividualBlock(x * 32 + 30, z * 32 - 1) != Blocks.air)
+            && !currentRoomContainsSection(x, z - 1)) {
+                connectionQueue.add(new Wall(x, z, Direction.NORTH));
+            }
+            //Detect door
+            else if(csm.getIndividualBlock(x * 32 + 13, z * 32 - 1) != Blocks.air
+                    && !currentRoomContainsSection(x, z - 1)) {
+                doorQueue.add(new Wall(x, z, Direction.NORTH));
+            }
+        }
+
+        if(oppositeExcludeDirection != Direction.WEST) {
+            //Do east
+
+            //Detect connected
+            if((csm.getIndividualBlock(x * 32 - 1,z * 32) != Blocks.air
+            || csm.getIndividualBlock(x * 32 - 1,z * 32 + 30) != Blocks.air)
+            && !currentRoomContainsSection(x - 1, z)) {
+                connectionQueue.add(new Wall(x, z, Direction.EAST));
+            }
+            //Detect door
+            else if(csm.getIndividualBlock(x * 32 - 1, z * 32 + 13) != Blocks.air
+                    && !currentRoomContainsSection(x - 1, z)) {
+                doorQueue.add(new Wall(x, z, Direction.EAST));
+            }
+        }
+        if(oppositeExcludeDirection != Direction.EAST) {
+            //Do west
+
+            //Detect connected
+            if((csm.getIndividualBlock(x * 32 + 31,z * 32) != Blocks.air
+            || csm.getIndividualBlock(x * 32 + 31,z * 32 + 30) != Blocks.air)
+            && !currentRoomContainsSection(x + 1, z)) {
+                connectionQueue.add(new Wall(x, z, Direction.WEST));
+            }
+            //Detect door
+            else if(csm.getIndividualBlock(x * 32 + 31, z * 32 + 13) != Blocks.air
+                    && !currentRoomContainsSection(x + 1, z)) {
+                doorQueue.add(new Wall(x, z, Direction.WEST));
+            }
+        }
+    }
+
+    public void print() {
+        for(RoomCandidate rc : rooms) {
+            String fmt = "";
+            for(CoordinatePair cp : rc.sections) {
+                fmt += String.format("(%d, %d) ", cp.x, cp.z);
+            }
+            ChatPrinter.print(fmt);
+        }
+        char[][] b = new char[8][8];
+        for(int i = 0; i < 8; ++i) {
+            for(int j = 0; j < 8; ++j) {
+                b[i][j] = '#';
+            }
+        }
+        char h = 'A';
+        for(RoomCandidate rc : rooms) {
+            for(CoordinatePair cp : rc.sections) {
+                b[cp.z][cp.x] = h;
+            }
+            ++h;
+        }
+
+        for(int i = 0; i < 8; ++i) {
+            ChatPrinter.print(new String(b[i]));
+        }
+    }
+
+    public boolean currentRoomContainsSection(int x, int z) {
+        for(RoomCandidate rc : rooms) {
+            for(CoordinatePair cp : rc.sections) {
+                if((cp.x == x) && (cp.z == z)) {
+                    return true;
+                }
+            }
+        }
+        for(Wall w : connectionQueue) {
+            int roomX = 0;
+            int roomZ = 0;
+            switch(w.direction) {
+                case Direction.NORTH:
+                    roomX = w.parentSectionX;
+                    roomZ = w.parentSectionZ - 1;
+                    break;
+                case Direction.SOUTH:
+                    roomX = w.parentSectionX;
+                    roomZ = w.parentSectionZ + 1;
+                    break;
+                case Direction.WEST:
+                    roomX = w.parentSectionX + 1;
+                    roomZ = w.parentSectionZ;
+                    break;
+                case Direction.EAST:
+                    roomX = w.parentSectionX - 1;
+                    roomZ = w.parentSectionZ;
+                    break;
+                default:
+                    System.err.println("Invalid direction");
+            }
+
+            if((roomX == x) && (roomZ == z)) {
+                return true;
+            }
+        }
+
+        for(Wall w : doorQueue) {
+            int roomX = 0;
+            int roomZ = 0;
+            switch(w.direction) {
+                case Direction.NORTH:
+                    roomX = w.parentSectionX;
+                    roomZ = w.parentSectionZ - 1;
+                    break;
+                case Direction.SOUTH:
+                    roomX = w.parentSectionX;
+                    roomZ = w.parentSectionZ + 1;
+                    break;
+                case Direction.WEST:
+                    roomX = w.parentSectionX + 1;
+                    roomZ = w.parentSectionZ;
+                    break;
+                case Direction.EAST:
+                    roomX = w.parentSectionX - 1;
+                    roomZ = w.parentSectionZ;
+                    break;
+                default:
+                    System.err.println("Invalid direction");
+            }
+
+            if((roomX == x) && (roomZ == z)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
